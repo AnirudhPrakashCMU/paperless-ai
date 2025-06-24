@@ -87,6 +87,11 @@ module.exports = {
   },
   customFields: process.env.CUSTOM_FIELDS || '',
   aiProvider: process.env.AI_PROVIDER || 'openai',
+  chatProvider: process.env.CHAT_AI_PROVIDER || process.env.AI_PROVIDER || 'openai',
+  fallbackProviders: {
+    contextLimit: process.env.FALLBACK_PROVIDER_CONTEXT_LIMIT || null,
+    quotaExceeded: process.env.FALLBACK_PROVIDER_QUOTA_EXCEEDED || null,
+  },
   scanInterval: process.env.SCAN_INTERVAL || '*/30 * * * *',
   useExistingData: process.env.USE_EXISTING_DATA || 'no',
   // Add limit functions to config

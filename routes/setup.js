@@ -1577,15 +1577,29 @@ async function processDocument(doc, existingTags, existingCorrespondentList, own
     }
   }
 
-  const aiService = AIServiceFactory.getService();
-  let analysis;
-  if(customPrompt) {
-    console.log('[DEBUG] Starting document analysis with custom prompt');
-    analysis = await aiService.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id, customPrompt, options);
-  }else{
-    analysis = await aiService.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id, null, options);
+  async function analyzeWithFallback() {
+    let service = AIServiceFactory.getService('document');
+    let result;
+    if (customPrompt) {
+      console.log('[DEBUG] Starting document analysis with custom prompt');
+      result = await service.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id, customPrompt, options);
+    } else {
+      result = await service.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id, null, options);
+    }
+    if (result.error) {
+      let type = null;
+      if (/token limit|context/i.test(result.error)) type = 'contextLimit';
+      else if (/quota/i.test(result.error)) type = 'quotaExceeded';
+      if (type) {
+        service = AIServiceFactory.getService('document', type);
+        result = await service.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id, customPrompt || null, options);
+      }
+    }
+    return result;
   }
-  console.log('Repsonse from AI service:', analysis);
+
+  const analysis = await analyzeWithFallback();
+  console.log('Response from AI service:', analysis);
   if (analysis.error) {
     throw new Error(`[ERROR] Document analysis failed: ${analysis.error}`);
   }

@@ -117,7 +117,7 @@ class ChatService {
       res.setHeader('Connection', 'keep-alive');
 
       let fullResponse = '';
-      const aiProvider = process.env.AI_PROVIDER;
+      const aiProvider = config.chatProvider;
 
       if (aiProvider === 'openai') {
         // Make sure OpenAIService is initialized

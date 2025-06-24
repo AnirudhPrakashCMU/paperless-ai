@@ -88,7 +88,7 @@ class RagService {
       }
       
       // 3. Use AI service to generate an answer based on the enhanced context
-      const aiService = AIServiceFactory.getService();
+      const aiService = AIServiceFactory.getService('chat');
       
       // Create a language-agnostic prompt that works in any language
       const prompt = `
@@ -194,7 +194,7 @@ class RagService {
    */
   async getAIStatus() {
     try {
-      const aiService = AIServiceFactory.getService();
+      const aiService = AIServiceFactory.getService('chat');
       const status = await aiService.checkStatus();
       return status;
     } catch (error) {

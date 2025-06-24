@@ -210,9 +210,23 @@ async function processDocument(doc, existingTags, existingCorrespondentList, own
     content = content.substring(0, 50000);
   }
 
-  const aiService = AIServiceFactory.getService();
-  const analysis = await aiService.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id);
-  console.log('Repsonse from AI service:', analysis);
+  async function analyzeWithFallback() {
+    let service = AIServiceFactory.getService('document');
+    let result = await service.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id);
+    if (result.error) {
+      let type = null;
+      if (/token limit|context/i.test(result.error)) type = 'contextLimit';
+      else if (/quota/i.test(result.error)) type = 'quotaExceeded';
+      if (type) {
+        service = AIServiceFactory.getService('document', type);
+        result = await service.analyzeDocument(content, existingTags, existingCorrespondentList, doc.id);
+      }
+    }
+    return result;
+  }
+
+  const analysis = await analyzeWithFallback();
+  console.log('Response from AI service:', analysis);
   if (analysis.error) {
     throw new Error(`[ERROR] Document analysis failed: ${analysis.error}`);
   }
@@ -223,8 +237,6 @@ async function processDocument(doc, existingTags, existingCorrespondentList, own
 async function buildUpdateData(analysis, doc) {
   const updateData = {};
 
-  console.log('TEST: ', config.addAIProcessedTag)
-  console.log('TEST 2: ', config.addAIProcessedTags)
   // Only process tags if tagging is activated
   if (config.limitFunctions?.activateTagging !== 'no') {
     const { tagIds, errors } = await paperlessService.processTags(analysis.document.tags);
